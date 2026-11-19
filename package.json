@@ -25,7 +25,7 @@
     "fs": "^0.0.1-security",
     "fs-extra": "^11.1.0",
     "ffmpeg-static": "^5.2.0",
-    "fca-nx": "^6.8.8",
+    "fca-nx": "^6.7.3",
     "googleapis": "^100.0.0",
     "gif-encoder-2": "^1.0.5",
     "gradient-string": "^2.0.2",
