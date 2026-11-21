@@ -371,7 +371,7 @@ If you like GOAT-BOT-UPDATED, consider supporting the project.
 
 ---
 
-## 🙏 Credits
+## 🧑‍💻 Credits
 
 Based on [Goat-Bot-V2](https://github.com/ntkhang03/Goat-Bot-V2) by **NTKhang**. Maintained and extended by **NX / XALMAN**.
 
