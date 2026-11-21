@@ -17,6 +17,7 @@ The Facebook Chat API layer that drives every message, reaction and event the bo
 
 <img src="https://img.shields.io/badge/ENGINE-fca--nx-7000FF?style=for-the-badge&logo=npm&logoColor=white" alt="Engine fca-nx"/>
 <img src="https://img.shields.io/badge/VERSION-%5E7.2.5-00D9FF?style=for-the-badge&logo=semanticrelease&logoColor=white" alt="fca-nx version"/>
+<img src="https://img.shields.io/badge/ENGINE-E2EE--SUPPORTED-7000FF?style=for-the-badge&logo=npm&logoColor=white" alt="Engine fca-nx"/>
 <img src="https://img.shields.io/badge/LISTENER-MQTT%20REAL--TIME-9D4EDD?style=for-the-badge&logo=mqtt&logoColor=white" alt="MQTT"/>
 
 <br/><br/>
