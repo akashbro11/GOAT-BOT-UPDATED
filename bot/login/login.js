@@ -1,6 +1,6 @@
 "use strict";
 
-process.stdout.write("\x1b]2;LOGIN.JS - by xalman\x1b\x5c");
+process.stdout.write("\x1b]2;LOGIN.JS - by xalman \x1b\x5c");
 
 const defaultRequire = require;
 const gradient = defaultRequire("gradient-string");
@@ -27,10 +27,6 @@ if (typeof login !== "function") {
   process.exit(1);
 }
 
-/* =========================================================
- * VERSION
- * ======================================================= */
-
 function compareVersion(v1, v2) {
   const a = String(v1).split(".").map(Number);
   const b = String(v2).split(".").map(Number);
@@ -43,26 +39,24 @@ function compareVersion(v1, v2) {
   return 0;
 }
 
-/* =========================================================
- * APP STATE
- * ======================================================= */
-
 function filterKeysAppState(appState) {
   if (!Array.isArray(appState)) return [];
 
-  const allowed = new Set([
-    "c_user",
-    "xs",
-    "datr",
-    "fr",
-    "sb",
-    "i_user"
-  ]);
-
-  return appState.filter(item =>
-    item &&
-    allowed.has(item.key)
-  );
+  return appState.filter(item => {
+    if (!item || typeof item !== "object") return false;
+    const key = item.key || item.name;
+    const value = item.value;
+    if (!key || typeof key !== "string") return false;
+    if (value === undefined || value === null || value === "") return false;
+    return true;
+  }).map(item => {
+    const copy = { ...item };
+    if (copy.name && !copy.key) copy.key = copy.name;
+    delete copy.name;
+    if (!copy.domain) copy.domain = "facebook.com";
+    if (!copy.path) copy.path = "/";
+    return copy;
+  });
 }
 
 function getAccountIdFromAppState(appState) {
@@ -114,10 +108,6 @@ function getAccountIdFromFile(filePath) {
   }
 }
 
-/* =========================================================
- * NAVIGATOR
- * ======================================================= */
-
 if (
   typeof global.navigator ===
   "undefined"
@@ -129,20 +119,17 @@ if (
   typeof global.navigator.userAgent !==
   "string"
 ) {
+
   global.navigator.userAgent =
-    "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/131.0.0.0 Mobile Safari/537.36";
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36";
 }
 
 if (
   typeof global.navigator.platform !==
   "string"
 ) {
-  global.navigator.platform =
-    process.platform === "win32"
-      ? "Win32"
-      : process.platform === "darwin"
-        ? "MacIntel"
-        : "Linux armv8l";
+
+  global.navigator.platform = "Win32";
 }
 
 if (
@@ -179,10 +166,6 @@ if (
   global.navigator.vendor =
     "Google Inc.";
 }
-
-/* =========================================================
- * GLOBALS
- * ======================================================= */
 
 const {
   writeFileSync,
@@ -228,10 +211,6 @@ const currentVersion =
 const accountBaseDir =
   path.dirname(dirAccount);
 
-/* =========================================================
- * ACCOUNT CONFIG
- * ======================================================= */
-
 const ACCOUNT_FILES = [
   "account.txt",
   "account2.txt"
@@ -249,21 +228,8 @@ let currentAccountId = null;
 let switchingAccount = false;
 let reloginTimer = null;
 
-/*
- * Accounts which already failed during
- * the current automatic switch cycle.
- *
- * This prevents:
- *
- * account1 -> account2 -> account1
- * -> account2 -> infinite loop
- */
 const failedAccounts =
   new Set();
-
-/* =========================================================
- * UI
- * ======================================================= */
 
 function createLine(
   content,
@@ -350,11 +316,11 @@ const titles = [
     "╚═╝  ╚═══╝╚═╝  ╚═╝     ╚═════╝  ╚═════╝ ╚═╝  ╚═╝   ╚═╝   "
   ],
   [
-    "NX-GOAT-BOT-@" +
+    "GOAT-BOT-UPDATED-@" +
       currentVersion
   ],
   [
-    "NX-GOAT-BOT"
+    "GOAT-BOT-UPDATED"
   ]
 ];
 
@@ -397,9 +363,9 @@ for (const line of title) {
 }
 
 const sub = [
-  `NX-GOAT-BOT-@${currentVersion} - A simple Bot chat messenger use personal account`,
+  `GOAT-BOT-UPDATED-@${currentVersion} - A simple Bot chat messenger use personal account`,
   "Created by NTKhang with ♡ | Fixed by XALMAN",
-  "GITHUB: https://github.com/xalmandevv/NX-GOAT-BOT-V3",
+  "GITHUB: https://github.com/xalmandevv/GOAT-BOT-UPDATED",
   "ALL VERSIONS NOT RELEASED HERE ARE FAKE"
 ];
 
@@ -417,10 +383,6 @@ for (const t of sub) {
 }
 
 console.log(createLine());
-
-/* =========================================================
- * QR
- * ======================================================= */
 
 const qr =
   new QRCodeReader();
@@ -506,10 +468,6 @@ qr.readQrCode =
     );
   };
 
-/* =========================================================
- * ACCOUNT FILE HELPERS
- * ======================================================= */
-
 function getAccountFilePaths() {
   return ACCOUNT_FILES.map(
     file =>
@@ -548,10 +506,6 @@ function getExistingAccountFiles() {
     }
   );
 }
-
-/* =========================================================
- * ACTIVE ACCOUNT STATE
- * ======================================================= */
 
 function readActiveAccountInfo() {
   try {
@@ -712,10 +666,6 @@ function getOrderedAccountFiles(
     )
   ];
 }
-
-/* =========================================================
- * ACCOUNT READING
- * ======================================================= */
 
 function readAccountFile(
   filePath
@@ -978,10 +928,6 @@ function detectAndParseAccount(
   return null;
 }
 
-/* =========================================================
- * LOAD APP STATE
- * ======================================================= */
-
 async function getAppStateFromFile(
   filePath
 ) {
@@ -1139,10 +1085,6 @@ async function getAppStateFromEmail(
   }
 }
 
-/* =========================================================
- * LOGIN APP STATE
- * ======================================================= */
-
 async function getAppStateToLogin(
   loginWithEmail = false,
   preferredFile = null
@@ -1245,11 +1187,8 @@ async function getAppStateToLogin(
         filePath
       );
 
-    /*
-     * Skip accounts that have already
-     * failed during current automatic
-     * switching cycle.
-     */
+
+
     if (
       failedAccounts.has(
         fileName
@@ -1408,10 +1347,6 @@ async function getAppStateToLogin(
   process.exit(1);
 }
 
-/* =========================================================
- * STOP LISTENER
- * ======================================================= */
-
 function stopListening(
   keyListen
 ) {
@@ -1459,11 +1394,8 @@ function stopListening(
             }
           );
 
-          /*
-           * Safety timeout.
-           * Some FCA versions do not call
-           * the stopListening callback.
-           */
+
+
           setTimeout(
             done,
             5000
@@ -1477,10 +1409,6 @@ function stopListening(
     }
   );
 }
-
-/* =========================================================
- * GET USER NAME
- * ======================================================= */
 
 async function getName(
   userID
@@ -1499,10 +1427,6 @@ async function getName(
     return userID;
   }
 }
-
-/* =========================================================
- * ERROR NORMALIZATION
- * ======================================================= */
 
 function collectErrorText(
   error,
@@ -1590,13 +1514,6 @@ function getErrorText(
     .trim();
 }
 
-/* =========================================================
- * LOGIN EXPIRED / BLOCKED DETECTOR
- *
- * IMPORTANT FIX:
- * login_blocked was not detected before.
- * ======================================================= */
-
 function isLoginExpired(
   error
 ) {
@@ -1615,38 +1532,21 @@ function isLoginExpired(
 
   const patterns = [
     "not logged in",
-    "not logged in.",
     "login required",
-
     "session expired",
     "session has expired",
-
     "invalid session",
     "invalid cookie",
     "cookie expired",
     "cookie is expired",
-
-    "authentication error",
-    "authentication failed",
-    "authentication",
-
-    /*
-     * IMPORTANT
-     */
     "login blocked",
     "login_blocked",
-
-    "auth error",
     "auth_error",
-
+    "auth error",
     "checkpoint",
-
-    "login error",
-
-    "connection refused server unavailable",
-
     "account disabled",
-    "account suspended"
+    "account suspended",
+    "account locked"
   ];
 
   return patterns.some(
@@ -1665,10 +1565,6 @@ function isLoginExpired(
     }
   );
 }
-
-/* =========================================================
- * CONNECTION CLOSED DETECTOR
- * ======================================================= */
 
 function isConnectionClosed(
   error
@@ -1691,10 +1587,6 @@ function isConnectionClosed(
     )
   );
 }
-
-/* =========================================================
- * ACCOUNT FAILURE MARKING
- * ======================================================= */
 
 function markAccountFailed(
   accountFile
@@ -1730,20 +1622,14 @@ function markAccountSuccess(
       accountFile
     );
 
-  /*
-   * Successful account means the
-   * automatic switch cycle is complete.
-   */
+
+
   failedAccounts.clear();
 
   failedAccounts.delete(
     fileName
   );
 }
-
-/* =========================================================
- * GET NEXT ACCOUNT
- * ======================================================= */
 
 function getNextAccountFile(
   failedFile = null
@@ -1769,11 +1655,8 @@ function getNextAccountFile(
               ""
           );
 
-  /*
-   * First priority:
-   * account files which are not current
-   * and have not failed.
-   */
+
+
   const candidates =
     files.filter(file => {
       const name =
@@ -1795,16 +1678,10 @@ function getNextAccountFile(
     return candidates[0];
   }
 
-  /*
-   * If everything else failed,
-   * return null instead of looping forever.
-   */
+
+
   return null;
 }
-
-/* =========================================================
- * SWITCH ACCOUNT
- * ======================================================= */
 
 async function switchToNextAccount(
   failedFile = null
@@ -1832,9 +1709,8 @@ async function switchToNextAccount(
             )
           : null;
 
-    /*
-     * Mark current account failed.
-     */
+
+
     if (failedName) {
       markAccountFailed(
         failedName
@@ -1846,9 +1722,8 @@ async function switchToNextAccount(
         failedFile
       );
 
-    /*
-     * No other account.
-     */
+
+
     if (!nextFile) {
       log.error(
         "ACCOUNT",
@@ -1864,10 +1739,8 @@ async function switchToNextAccount(
         }`
       );
 
-      /*
-       * Final fallback:
-       * email/password
-       */
+
+
       if (
         facebookAccount.email &&
         facebookAccount.password
@@ -1877,9 +1750,8 @@ async function switchToNextAccount(
           "Trying email/password as final fallback..."
         );
 
-        /*
-         * Reset cycle before email login.
-         */
+
+
         failedAccounts.clear();
 
         await startBot(
@@ -1908,9 +1780,8 @@ async function switchToNextAccount(
       `Automatically switching to ${nextName}...`
     );
 
-    /*
-     * Stop old listener.
-     */
+
+
     try {
       if (
         global.GoatBot.Listening
@@ -1927,9 +1798,8 @@ async function switchToNextAccount(
     global.GoatBot.Listening =
       null;
 
-    /*
-     * Clear old runtime account.
-     */
+
+
     global.GoatBot.fcaApi =
       null;
 
@@ -1945,15 +1815,8 @@ async function switchToNextAccount(
     currentAccountId =
       null;
 
-    /*
-     * Start next account.
-     *
-     * NOTE:
-     * We intentionally do not clear
-     * failedAccounts here. If next account
-     * also fails, it will be marked and
-     * the cycle will stop instead of looping.
-     */
+
+
     await startBot(
       false,
       nextName
@@ -1974,10 +1837,6 @@ async function switchToNextAccount(
       false;
   }
 }
-
-/* =========================================================
- * START BOT
- * ======================================================= */
 
 async function startBot(
   loginWithEmail = false,
@@ -2034,10 +1893,8 @@ async function startBot(
     process.exit(1);
   }
 
-  /*
-   * Stop existing listener before
-   * starting another account.
-   */
+
+
   if (
     global.GoatBot.Listening
   ) {
@@ -2084,13 +1941,8 @@ async function startBot(
       appState
     );
 
-  /*
-   * IMPORTANT:
-   *
-   * If preferredFile exists, use it.
-   * Do not accidentally use stale
-   * currentAccountFile from previous session.
-   */
+
+
   const actualFile =
     loginWithEmail
       ? null
@@ -2125,11 +1977,8 @@ async function startBot(
       false;
   }, 1500);
 
-  /*
-   * Login callback is asynchronous.
-   * Use a session ID so an old account
-   * callback cannot overwrite a new one.
-   */
+
+
   const sessionId =
     `${Date.now()}_${randomString(8)}`;
 
@@ -2141,9 +1990,8 @@ async function startBot(
     accountFile,
     currentSessionId
   ) {
-    /*
-     * Reset command maps.
-     */
+
+
     global.GoatBot.commands =
       new Map();
 
@@ -2165,24 +2013,21 @@ async function startBot(
     global.GoatBot.onReaction =
       new Map();
 
-    /*
-     * Clear old restart timer.
-     */
+
+
     clearInterval(
       global.intervalRestartListenMqtt
     );
 
     delete global.intervalRestartListenMqtt;
 
-    /*
-     * i_user support.
-     */
+
+
     if (
       facebookAccount.i_user
     ) {
-      /*
-       * Avoid duplicate i_user.
-       */
+
+
       const already =
         appState.some(
           item =>
@@ -2214,23 +2059,33 @@ async function startBot(
       }
     }
 
+
+
+    const safeFcaOptions = Object.assign(
+      {
+        online: false,
+        autoMarkRead: false,
+        selfListen: false,
+        listenEvents: true,
+        updatePresence: false,
+        autoReconnect: true,
+        emitReady: false
+      },
+      global.GoatBot.config.optionsFca || {}
+    );
+
     login(
       {
         appState
       },
 
-      global.GoatBot.config
-        .optionsFca || {},
+      safeFcaOptions,
 
       async function(
         error,
         api
       ) {
-        /*
-         * -------------------------------------------------
-         * LOGIN ERROR
-         * -------------------------------------------------
-         */
+
 
         if (error) {
           global.statusAccountBot =
@@ -2255,12 +2110,8 @@ async function startBot(
             `Detected error: ${errorText || "unknown"}`
           );
 
-          /*
-           * IMPORTANT:
-           * Detect login_blocked,
-           * auth_error, session expired,
-           * checkpoint etc.
-           */
+
+
           const expired =
             isLoginExpired(
               error
@@ -2275,9 +2126,8 @@ async function startBot(
               accountFile
             );
 
-            /*
-             * Avoid duplicate switch.
-             */
+
+
             if (
               reloginTimer
             ) {
@@ -2305,11 +2155,8 @@ async function startBot(
             return;
           }
 
-          /*
-           * Login failed with email/password.
-           * Do not try account files again
-           * from this callback.
-           */
+
+
           if (
             loginWithEmail
           ) {
@@ -2323,10 +2170,8 @@ async function startBot(
             return;
           }
 
-          /*
-           * If an account file was being used,
-           * switch to next account.
-           */
+
+
           if (
             accountFile
           ) {
@@ -2345,9 +2190,8 @@ async function startBot(
             return;
           }
 
-          /*
-           * Final email/password fallback.
-           */
+
+
           if (
             facebookAccount.email &&
             facebookAccount.password
@@ -2370,14 +2214,8 @@ async function startBot(
           return;
         }
 
-        /*
-         * -------------------------------------------------
-         * OLD SESSION GUARD
-         * -------------------------------------------------
-         *
-         * If an old account callback arrives after
-         * account switching already started, ignore it.
-         */
+
+
         if (
           global.GoatBot.loginSessionId !==
           currentSessionId
@@ -2400,11 +2238,7 @@ async function startBot(
           return;
         }
 
-        /*
-         * -------------------------------------------------
-         * LOGIN SUCCESS
-         * -------------------------------------------------
-         */
+
 
         global.GoatBot.fcaApi =
           api;
@@ -2415,10 +2249,76 @@ async function startBot(
         global.botID =
           global.GoatBot.botID;
 
-        /*
-         * Successful account:
-         * clear failed account cycle.
-         */
+
+
+        try {
+          const accountPath =
+            accountFile
+              ? getAccountPath(accountFile)
+              : null;
+
+          if (
+            accountPath &&
+            typeof api.sessionGuard === "function"
+          ) {
+            api.sessionGuard(accountPath, {
+              interval: 5 * 60 * 1000,
+              debounce: 30 * 1000
+            });
+            log.info(
+              "SESSION",
+              `SessionGuard active → ${accountPath}`
+            );
+          } else if (
+            accountPath &&
+            typeof api.getAppState === "function"
+          ) {
+
+            if (global.GoatBot._sessionSaveTimer) {
+              clearInterval(
+                global.GoatBot._sessionSaveTimer
+              );
+            }
+            global.GoatBot._sessionSaveTimer =
+              setInterval(() => {
+                try {
+                  const state =
+                    api.getAppState();
+                  if (
+                    Array.isArray(state) &&
+                    state.length >= 5
+                  ) {
+                    writeFileSync(
+                      accountPath,
+                      JSON.stringify(
+                        state,
+                        null,
+                        2
+                      )
+                    );
+                  }
+                } catch {}
+              }, 5 * 60 * 1000);
+            if (
+              global.GoatBot._sessionSaveTimer
+                .unref
+            ) {
+              global.GoatBot._sessionSaveTimer.unref();
+            }
+            log.info(
+              "SESSION",
+              `Periodic appState save → ${accountPath}`
+            );
+          }
+        } catch (sgErr) {
+          log.warn(
+            "SESSION",
+            `SessionGuard setup failed: ${sgErr.message}`
+          );
+        }
+
+
+
         markAccountSuccess(
           accountFile
         );
@@ -2487,11 +2387,7 @@ async function startBot(
             "GOAT BOT"
         );
 
-        /*
-         * -------------------------------------------------
-         * LOAD DATABASE
-         * -------------------------------------------------
-         */
+
 
         const {
           threadModel,
@@ -2513,11 +2409,7 @@ async function startBot(
             createLine
           );
 
-        /*
-         * -------------------------------------------------
-         * CUSTOM
-         * -------------------------------------------------
-         */
+
 
         await require(
           "../custom.js"
@@ -2534,11 +2426,7 @@ async function startBot(
           getText
         });
 
-        /*
-         * -------------------------------------------------
-         * LOAD SCRIPTS
-         * -------------------------------------------------
-         */
+
 
         await require(
           process.env.NODE_ENV ===
@@ -2558,11 +2446,7 @@ async function startBot(
           createLine
         );
 
-        /*
-         * -------------------------------------------------
-         * HANDLER
-         * -------------------------------------------------
-         */
+
 
         const handlerAction =
           require(
@@ -2579,19 +2463,14 @@ async function startBot(
             globalData
           );
 
-        /*
-         * -------------------------------------------------
-         * LISTENER CALLBACK
-         * -------------------------------------------------
-         */
+
 
         async function callBackListen(
           error,
           event
         ) {
-          /*
-           * Ignore events from an old session.
-           */
+
+
           if (
             global.GoatBot.loginSessionId !==
             currentSessionId
@@ -2599,11 +2478,7 @@ async function startBot(
             return;
           }
 
-          /*
-           * -----------------------------------------------
-           * LISTENER ERROR
-           * -----------------------------------------------
-           */
+
 
           if (error) {
             global.responseUptimeCurrent =
@@ -2622,11 +2497,9 @@ async function startBot(
               `Error: ${errorText || String(error)}`
             );
 
-            /*
-             * =============================================
-             * LOGIN EXPIRED / BLOCKED
-             * =============================================
-             */
+           //create by xalman 
+            
+
             if (
               isLoginExpired(
                 error
@@ -2640,16 +2513,8 @@ async function startBot(
                 }`
               );
 
-              /*
-               * IMPORTANT:
-               * This catches:
-               *
-               * login_blocked
-               * auth_error
-               * auth error
-               * session expired
-               * checkpoint
-               */
+
+
               if (
                 accountFile &&
                 !loginWithEmail
@@ -2689,9 +2554,8 @@ async function startBot(
                 return;
               }
 
-              /*
-               * Email/password session failed.
-               */
+
+
               if (
                 loginWithEmail
               ) {
@@ -2706,11 +2570,7 @@ async function startBot(
               }
             }
 
-            /*
-             * =============================================
-             * NOT LOGGED IN
-             * =============================================
-             */
+
 
             if (
               error?.error ===
@@ -2759,15 +2619,7 @@ async function startBot(
               return;
             }
 
-            /*
-             * =============================================
-             * CONNECTION CLOSED
-             * =============================================
-             *
-             * Normal MQTT disconnect should not instantly
-             * switch accounts unless FCA reports an auth
-             * error such as login_blocked.
-             */
+
 
             if (
               isConnectionClosed(
@@ -2782,9 +2634,8 @@ async function startBot(
               return;
             }
 
-            /*
-             * Other listener errors.
-             */
+
+
             await handlerWhenListenHasError(
               {
                 api,
@@ -2803,11 +2654,7 @@ async function startBot(
             return;
           }
 
-          /*
-           * -----------------------------------------------
-           * NORMAL EVENT
-           * -----------------------------------------------
-           */
+
 
           global.responseUptimeCurrent =
             global.responseUptimeSuccess;
@@ -2869,11 +2716,7 @@ async function startBot(
             }
           }
 
-          /*
-           * -----------------------------------------------
-           * WHITE LIST
-           * -----------------------------------------------
-           */
+
 
           if (
             global.GoatBot.config
@@ -2892,11 +2735,7 @@ async function startBot(
             return;
           }
 
-          /*
-           * -----------------------------------------------
-           * THREAD WHITE LIST
-           * -----------------------------------------------
-           */
+
 
           if (
             global.GoatBot.config
@@ -2915,11 +2754,7 @@ async function startBot(
             return;
           }
 
-          /*
-           * -----------------------------------------------
-           * DUPLICATE MESSAGE CONTROL
-           * -----------------------------------------------
-           */
+
 
           if (
             event.messageID &&
@@ -2956,11 +2791,7 @@ async function startBot(
             }
           }
 
-          /*
-           * -----------------------------------------------
-           * ACTION HANDLER
-           * -----------------------------------------------
-           */
+
 
           try {
             handlerAction(
@@ -2974,11 +2805,7 @@ async function startBot(
           }
         }
 
-        /*
-         * -------------------------------------------------
-         * CALLBACK WRAPPER
-         * -------------------------------------------------
-         */
+
 
         function createCallBackListen(
           key
@@ -2997,10 +2824,8 @@ async function startBot(
             error,
             event
           ) {
-            /*
-             * Protect against callbacks
-             * after account switching.
-             */
+
+
             if (
               global.GoatBot.loginSessionId !==
               currentSessionId
@@ -3034,24 +2859,18 @@ async function startBot(
           };
         }
 
-        /*
-         * -------------------------------------------------
-         * START MQTT
-         * -------------------------------------------------
-         */
+
 
         try {
           await stopListening();
 
-          /*
-           * Make sure old listener is gone.
-           */
+
+
           global.GoatBot.Listening =
             null;
 
-          /*
-           * Re-check session before creating listener.
-           */
+
+
           if (
             global.GoatBot.loginSessionId !==
             currentSessionId
@@ -3072,9 +2891,8 @@ async function startBot(
             "MQTT listener started successfully."
           );
 
-          /*
-           * Auto uptime.
-           */
+
+
           require(
             "../autoUptime.js"
           );
@@ -3085,10 +2903,8 @@ async function startBot(
             `Failed to start MQTT listener: ${err.message}`
           );
 
-          /*
-           * If listener itself reports an authentication
-           * problem, automatically switch.
-           */
+
+
           if (
             isLoginExpired(
               err
@@ -3125,9 +2941,8 @@ async function startBot(
 
   );
 
-  /*
-   * Set current account immediately.
-   */
+
+
   global.GoatBot.currentAccountFile =
     actualFile;
 
@@ -3136,10 +2951,6 @@ async function startBot(
 
   return true;
 }
-
-/* =========================================================
- * PUBLIC RELOGIN
- * ======================================================= */
 
 global.GoatBot.reLoginBot =
   async function(
@@ -3156,10 +2967,8 @@ global.GoatBot.reLoginBot =
       return;
     }
 
-    /*
-     * Reset failed accounts for manual
-     * relogin.
-     */
+
+
     failedAccounts.clear();
 
     if (
@@ -3181,10 +2990,6 @@ global.GoatBot.reLoginBot =
       getCurrentAccountFile()
     );
   };
-
-/* =========================================================
- * MANUAL ACCOUNT SWITCH
- * ======================================================= */
 
 global.GoatBot.switchAccount =
   async function(
@@ -3209,9 +3014,8 @@ global.GoatBot.switchAccount =
       );
     }
 
-    /*
-     * Manual switch starts a fresh cycle.
-     */
+
+
     failedAccounts.clear();
 
     if (
@@ -3228,10 +3032,6 @@ global.GoatBot.switchAccount =
       fileName
     );
   };
-
-/* =========================================================
- * CURRENT ACCOUNT API
- * ======================================================= */
 
 global.GoatBot.getCurrentAccount =
   function() {
@@ -3257,10 +3057,6 @@ global.GoatBot.getCurrentAccount =
         null
     };
   };
-
-/* =========================================================
- * PROCESS EXIT
- * ======================================================= */
 
 process.on(
   "exit",
@@ -3289,10 +3085,6 @@ process.on(
   }
 );
 
-/* =========================================================
- * GLOBAL ERROR PROTECTION
- * ======================================================= */
-
 process.on(
   "unhandledRejection",
   async err => {
@@ -3307,10 +3099,6 @@ process.on(
     } catch {}
   }
 );
-
-/* =========================================================
- * START
- * ======================================================= */
 
 startBot().catch(
   err => {
