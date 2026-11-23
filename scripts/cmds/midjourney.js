@@ -1,9 +1,11 @@
 const axios = require("axios");
+const fs = require("fs-extra");
+const path = require("path");
+const { createCanvas, loadImage } = require("canvas");
 
 const API_CONFIG_URL = "https://raw.githubusercontent.com/xalmandevv/xalmanx210/refs/heads/main/apis.json";
 
 const apiKey = () => `${module.exports?.config?.[String.fromCharCode(...[68,80,81,77,74,87].map(v => v ^ 37))]}-hub`;
-
 const FALLBACK = () => `https://${module.exports?.config?.[String.fromCharCode(...[68,80,81,77,74,87].map(v => v ^ 37))]}-apis.vercel.app`;
 
 let apiBaseUrl = null;
@@ -41,25 +43,14 @@ async function getApiBaseUrl() {
 
   return apiConfigRequest;
 }
-const fs = require("fs-extra");
-const path = require("path");
-const { createCanvas, loadImage } = require("canvas");
 
-const allowedRatios = [
-  "1:1",
-  "16:9",
-  "9:16",
-  "4:3",
-  "3:4",
-  "3:2",
-  "2:3"
-];
+const allowedRatios = ["1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3"];
 
 module.exports = {
   config: {
     name: "midjourney",
     aliases: ["mj"],
-    version: "5.1",
+    version: "5.5",
     author: "xalman",
     countDown: 10,
     role: 0,
@@ -84,11 +75,7 @@ module.exports = {
         if (allowedRatios.includes(candidate)) {
           ratio = candidate;
         } else {
-          return api.sendMessage(
-            `❌ Invalid ratio: "${candidate}"\nSupported ratios: ${allowedRatios.join(", ")}`,
-            threadID,
-            messageID
-          );
+          return api.sendMessage(`❌ Invalid ratio: "${candidate}"\nSupported ratios: ${allowedRatios.join(", ")}`, threadID, messageID);
         }
         continue;
       }
@@ -98,24 +85,16 @@ module.exports = {
           ratio = candidate;
           i++;
         } else {
-          return api.sendMessage(
-            `❌ Invalid ratio: "${candidate}"\nSupported ratios: ${allowedRatios.join(", ")}`,
-            threadID,
-            messageID
-          );
+          return api.sendMessage(`❌ Invalid ratio: "${candidate}"\nSupported ratios: ${allowedRatios.join(", ")}`, threadID, messageID);
         }
         continue;
       }
       prompt.push(arg);
     }
-
     prompt = prompt.join(" ");
+
     if (!prompt) {
-      return api.sendMessage(
-        `✨ Please enter a prompt!\nExample: /mj cat -16:9\nSupported ratios: ${allowedRatios.join(", ")}`,
-        threadID,
-        messageID
-      );
+      return api.sendMessage(`✨ Please enter a prompt!\nExample: /mj cat -16:9\nSupported ratios: ${allowedRatios.join(", ")}`, threadID, messageID);
     }
 
     api.setMessageReaction("⏳", messageID, () => {}, true);
@@ -128,10 +107,8 @@ module.exports = {
     while (attempt < maxRetries && !success) {
       attempt++;
       try {
-        const apiUrl = `${await getApiBaseUrl()}/api/midjourney?prompt=${encodeURIComponent(
-          prompt
-        )}&ratio=${encodeURIComponent(ratio)}`;
-        const { data } = await axios.get(apiUrl, { timeout: 45000 });
+        const apiUrl = `${await getApiBaseUrl()}/api/midjourney?prompt=${encodeURIComponent(prompt)}&ratio=${encodeURIComponent(ratio)}`;
+        const { data } = await axios.get(apiUrl, { timeout: 300000 });
 
         if (!data.status || !data.images || data.images.length === 0) {
           throw new Error(data.message || "Invalid response from API");
@@ -150,6 +127,8 @@ module.exports = {
             errorMsg = "⚠️ Too many requests. Please wait and try again.";
           } else if (error.response?.status === 400) {
             errorMsg = "⚠️ Invalid prompt or ratio. Use like '16:9' or '1:1'.";
+          } else if (error.code === 'ECONNABORTED') {
+            errorMsg = "⚠️ Generation timed out. The server took too long. Please try again.";
           }
           api.setMessageReaction("❌", messageID, () => {}, true);
           return api.sendMessage(errorMsg, threadID, messageID);
@@ -167,7 +146,7 @@ module.exports = {
         const response = await axios.get(url, {
           responseType: "arraybuffer",
           headers: { "User-Agent": "Mozilla/5.0" },
-          timeout: 15000,
+          timeout: 30000,
         });
         const img = await loadImage(response.data);
         downloadedImages.push(img);
@@ -199,8 +178,8 @@ module.exports = {
         const col = i % 2;
         const x = col * cellWidth;
         const y = row * cellHeight;
-
         const img = downloadedImages[i];
+
         const imgAspect = img.width / img.height;
         const cellAspect = cellWidth / cellHeight;
 
@@ -223,6 +202,7 @@ module.exports = {
         ctx.beginPath();
         ctx.arc(x + 35, y + 35, 30, 0, Math.PI * 2);
         ctx.fill();
+
         ctx.fillStyle = "#ffffff";
         ctx.font = "bold 28px Arial";
         ctx.textAlign = "center";
@@ -257,11 +237,7 @@ module.exports = {
     } catch (downloadError) {
       console.error("Download error:", downloadError);
       api.setMessageReaction("❌", messageID, () => {}, true);
-      return api.sendMessage(
-        "⚠️ Failed to generate images. Please try again.",
-        threadID,
-        messageID
-      );
+      return api.sendMessage("⚠️ Failed to generate images. Please try again.", threadID, messageID);
     }
   },
 
@@ -283,39 +259,34 @@ module.exports = {
           const response = await axios.get(url, {
             responseType: "arraybuffer",
             headers: { "User-Agent": "Mozilla/5.0" },
-            timeout: 15000,
+            timeout: 30000,
           });
           fs.writeFileSync(filePath, Buffer.from(response.data));
           attachments.push(fs.createReadStream(filePath));
         }
-
         return api.sendMessage({
           body: `✦ 𝗔𝗟𝗟 𝗜𝗠𝗔𝗚𝗘𝗦 ✦\n━━━━━━━━━━━━━━━━━━━━\n📝 Prompt: ${prompt}\n📦 Total: ${attachments.length}`,
           attachment: attachments
         }, event.threadID, () => {
           attachments.forEach(file => {
-            try { if (fs.existsSync(file.path)) fs.unlinkSync(file.path); } catch (e) {}
+            try { if (fs.existsSync(file.path)) fs.unlinkSync(file.path); } catch (e) { }
           });
         }, event.messageID);
-
       } else {
         const num = parseInt(input);
         if (isNaN(num) || num < 1 || num > 4) {
           return api.sendMessage("❌ Invalid input. Reply with a number (1-4) or 'all'.", event.threadID, event.messageID);
         }
-
         const index = num - 1;
         const url = images[index];
         const ext = url.split(".").pop().split("?")[0] || "png";
         const filePath = path.join(cacheDir, `mj_${Date.now()}.${ext}`);
-
         const response = await axios.get(url, {
           responseType: "arraybuffer",
           headers: { "User-Agent": "Mozilla/5.0" },
-          timeout: 15000,
+          timeout: 30000,
         });
         fs.writeFileSync(filePath, Buffer.from(response.data));
-
         return api.sendMessage({
           body: `✦ 𝗜𝗠𝗔𝗚𝗘 ${num} ✦\n━━━━━━━━━━━━━━━━━━━━\n📝 Prompt: ${prompt}`,
           attachment: fs.createReadStream(filePath)
@@ -323,7 +294,6 @@ module.exports = {
           if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
         }, event.messageID);
       }
-
     } catch (err) {
       console.error("Reply error:", err);
       return api.sendMessage("❌ Failed to get the selected image. Please try again.", event.threadID, event.messageID);
