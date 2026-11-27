@@ -46,20 +46,19 @@ module.exports = {
   config: {
     name: "smsbomber",
     aliases: ["smb", "bomb"],
-    version: "4.1",
+    version: "4.5",
     author: "xalman",
     role: 0,
     countDown: 5,
     category: "tools",
     guide: {
-      en: "{pn} <phone> [count]"
+      en: "{pn} <phone> [count] Max request 2000"
     }
   },
 
   onStart: async function ({ api, event, args, message }) {
     const { threadID, messageID } = event;
     const API_URL = `${await getApiBaseUrl()}/api/bomb`;
-
     const phone = args[0];
     const count = args[1] || 1;
 
@@ -76,15 +75,17 @@ module.exports = {
         api.setMessageReaction("✅", messageID, () => {}, true);
 
         const data = res.data;
-        const msg = `🚀 𝗦𝗠𝗦 𝗕𝗢𝗠𝗕𝗘𝗥 𝗕𝗗
-━━━━━━━━━━━━━━━━━━━━━━
-📱 Target: ${data.target || phone}
-⚡ Mode: ${data.mode || "HIGH"}
-📊 Total Requests: ${data.total_requests || 0}
-🌀 Total APIs: ${data.total_apis || 0}
-🔄 Rounds: ${data.total_rounds || 1}
-💬 Status: ${data.message || "Attack started successfully!"}
-━━━━━━━━━━━━━━━━━━━━━━`;
+        const msg = `╭━━━━━━━━━━━━━━━━━━━━╮
+  🚀 𝗦𝗠𝗦 𝗕𝗢𝗠𝗕𝗜𝗡𝗚 𝗦𝗧𝗔𝗥𝗧𝗘𝗗
+╰━━━━━━━━━━━━━━━━━━━━╯
+
+  📱 𝗧𝗔𝗥𝗚𝗘𝗧  : ${data.target || phone}
+  ⚡ 𝗠𝗢𝗗𝗘    : ${data.mode || "FAST"}
+  🔄 𝗖𝗢𝗨𝗡𝗧   : ${data.total_rounds || 1}
+
+  ━━━━━━━━━━━━━━━━━━━━━━
+  ◈ 𝗦𝗧𝗔𝗧𝗨𝗦 : SENDING 
+  ━━━━━━━━━━━━━━━━━━━━━━`;
 
         return message.reply(msg);
       } else {
@@ -93,7 +94,7 @@ module.exports = {
 
     } catch (error) {
       api.setMessageReaction("❌", messageID, () => {}, true);
-      return message.reply("❌ Bombing failed or API error!");
+      return message.reply("❌ Bombing failed ");
     }
   }
 };
