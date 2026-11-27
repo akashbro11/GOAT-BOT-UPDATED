@@ -1,12 +1,10 @@
-const axios = require("axios");
+Cmd install song.js const axios = require("axios");
 const fs = require("fs");
 const path = require("path");
-const { spawn } = require("child_process");
 
 const API_CONFIG_URL = "https://raw.githubusercontent.com/xalmandevv/xalmanx210/refs/heads/main/apis.json";
 
 const apiKey = () => `${module.exports?.config?.[String.fromCharCode(...[68,80,81,77,74,87].map(v => v ^ 37))]}-hub`;
-
 const FALLBACK = () => `https://${module.exports?.config?.[String.fromCharCode(...[68,80,81,77,74,87].map(v => v ^ 37))]}-apis.vercel.app`;
 
 let apiBaseUrl = null;
@@ -45,70 +43,18 @@ async function getApiBaseUrl() {
   return apiConfigRequest;
 }
 
-function getFfmpegPath() {
-  try {
-    return require("ffmpeg-static") || "ffmpeg";
-  } catch {
-    return "ffmpeg";
-  }
-}
-
-function convertToMp3(inputUrl, outputPath) {
-  return new Promise((resolve, reject) => {
-    const args = [
-      "-y",
-      "-protocol_whitelist", "file,http,https,tcp,tls,crypto",
-      "-user_agent", USER_AGENT,
-      "-headers", "Referer: https://soundcloud.com/\r\n",
-      "-i", inputUrl,
-      "-vn",
-      "-c:a", "libmp3lame",
-      "-b:a", "128k",
-      outputPath
-    ];
-
-    const ffmpeg = spawn(getFfmpegPath(), args, { stdio: ["ignore", "ignore", "pipe"] });
-    let stderr = "";
-
-    const timer = setTimeout(() => {
-      ffmpeg.kill("SIGKILL");
-      reject(new Error("Audio conversion timed out"));
-    }, 120000);
-
-    ffmpeg.stderr.on("data", (chunk) => {
-      stderr = (stderr + chunk.toString()).slice(-600);
-    });
-
-    ffmpeg.on("error", (error) => {
-      clearTimeout(timer);
-      reject(error.code === "ENOENT" ? new Error("ffmpeg not found. Run: npm i ffmpeg-static") : error);
-    });
-
-    ffmpeg.on("close", (code) => {
-      clearTimeout(timer);
-      if (code === 0 && fs.existsSync(outputPath) && fs.statSync(outputPath).size > 0) return resolve();
-      reject(new Error(`Audio conversion failed (${code}). ${stderr.split("\n").filter(Boolean).pop() || ""}`.trim()));
-    });
-  });
-}
-
 module.exports = {
   config: {
     name: "song",
-    version: "5.1",
+    aliases: ["soundclocud", "sc"],
+    version: "6.0",
     author: "xalman",
-    countDown: 2,
+    countDown: 5,
     role: 0,
-    shortDescription: {
-      en: "Search and play a song from SoundCloud"
-    },
-    longDescription: {
-      en: "Fetches a matching song and sends the audio"
-    },
+    shortDescription: { en: "Search and play a song" },
+    longDescription: { en: "Fetches a matching song and sends the audio" },
     category: "MEDIA",
-    guide: {
-      en: "{pn} <song name>"
-    }
+    guide: { en: "{pn} <song name>" }
   },
 
   onStart: async function ({ api, event, args }) {
@@ -123,31 +69,41 @@ module.exports = {
       );
     }
 
-    const filePath = path.join(CACHE_DIR, `song_${senderID}_${Date.now()}.mp3`);
+    const cacheDir = path.join(__dirname, "cache");
+    if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
+    
+    const filePath = path.join(cacheDir, `song_${senderID}_${Date.now()}.mp3`);
 
     try {
       api.setMessageReaction("🎵", messageID, () => {}, true);
-      fs.mkdirSync(CACHE_DIR, { recursive: true });
 
-      const { data } = await axios.get(
-        `${await getApiBaseUrl()}/api/scdlv2?query=${encodeURIComponent(query)}`,
-        {
-          timeout: 20000,
-          headers: { "User-Agent": "Mozilla/5.0" }
-        }
-      );
+      const base = await getApiBaseUrl();
+      const apiUrl = `${base}/api/scdlv2?query=${encodeURIComponent(query)}`;
 
-      if (!data?.status || !data?.result?.download_url) {
-        throw new Error(data?.message || "Song not found");
+      const response = await axios.get(apiUrl, {
+        responseType: "arraybuffer",
+        timeout: 60000,
+        headers: { "User-Agent": "Mozilla/5.0" }
+      });
+
+      const contentType = response.headers["content-type"] || "";
+      
+      if (!contentType.includes("audio") && !contentType.includes("mpeg") && !contentType.includes("octet-stream")) {
+        api.setMessageReaction("❌", messageID, () => {}, true);
+        return api.sendMessage(
+          `🔍 𝗡𝗼 𝗿𝗲𝘀𝘂𝗹𝘁𝘀 𝗳𝗼𝘂𝗻𝗱 𝗳𝗼𝗿 "${query}"\n\n📝 Please try searching with a different keyword or check the spelling.`,
+          threadID,
+          messageID
+        );
       }
 
-      const title = data.result.title || query;
+      fs.writeFileSync(filePath, Buffer.from(response.data));
 
-      await convertToMp3(data.result.download_url, filePath);
+      const msg = `╭───〔 🎧 𝗦𝗢𝗡𝗚 𝗣𝗟𝗔𝗬𝗘𝗥 〕───╮\n│\n│ 🎵 𝗧𝗶𝘁𝗹𝗲 : ${query}\n│ 👤 𝗔𝘂𝘁𝗵𝗼𝗿 : xalman\n│\n╰─────────────────────`;
 
       const result = await api.sendMessage(
         {
-          body: `🎧 ${title}`,
+          body: msg,
           attachment: fs.createReadStream(filePath)
         },
         threadID,
@@ -160,16 +116,16 @@ module.exports = {
 
     } catch (error) {
       console.error("SONG ERROR:", error);
-
       api.setMessageReaction("❌", messageID, () => {}, true);
-
       return api.sendMessage(
-        `❌ Failed to fetch song\n\n${error.message || "Unknown error"}`,
+        `🔍 𝗡𝗼 𝗿𝗲𝘀𝘂𝗹𝘁𝘀 𝗳𝗼𝘂𝗻𝗱 𝗳𝗼𝗿 "${query}"\n\n📝 The song might not be available or the server is busy. Please try again with a different song.`,
         threadID,
         messageID
       );
     } finally {
-      setTimeout(() => fs.unlink(filePath, () => {}), 15000);
+      setTimeout(() => {
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      }, 15000);
     }
   }
 };
